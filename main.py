@@ -215,7 +215,15 @@ class BlockScoutMCPClient:
                 logger.info(f"MCP: Response Content-Type: {response.headers.get('content-type')}")
                 logger.info(f"MCP: Response headers: {dict(response.headers)}")
                 logger.info(f"MCP: Response text length: {len(response.text)}")
-                logger.info(f"MCP: Response text preview: {response.text[:500]}...")
+                logger.info(f"MCP: Full response text: {response.text}")
+                
+                # Log specific error details for 404s
+                if response.status_code == 404:
+                    logger.error(f"MCP: 404 ERROR - Full response: {response.text}")
+                    logger.error(f"MCP: 404 ERROR - Headers: {dict(response.headers)}")
+                elif response.status_code >= 400:
+                    logger.error(f"MCP: HTTP ERROR {response.status_code} - Full response: {response.text}")
+                    logger.error(f"MCP: HTTP ERROR {response.status_code} - Headers: {dict(response.headers)}")
                 
                 # Check if we got an error response
                 if response.status_code >= 400:
@@ -372,6 +380,8 @@ class BlockScoutMCPClient:
         logger.info(f"MCP: Starting get_transaction for tx: {tx_hash}")
         logger.info(f"MCP: Chain ID: {chain_id}")
         logger.info(f"MCP: Chain ID type: {type(chain_id)}")
+        logger.info(f"MCP: Transaction hash length: {len(tx_hash)}")
+        logger.info(f"MCP: Transaction hash starts with 0x: {tx_hash.startswith('0x')}")
         
         # FIXED: Use correct parameter names and ensure chain_id is a string
         arguments = {
@@ -381,6 +391,8 @@ class BlockScoutMCPClient:
         }
         
         logger.info(f"MCP: Calling tool with arguments: {arguments}")
+        logger.info(f"MCP: Tool name: get_transaction_info")
+        logger.info(f"MCP: MCP URL: {self.mcp_url}")
         
         try:
             result = await self.call_tool(
@@ -699,10 +711,48 @@ class BlockscoutAgent:
                 endpoints={
                     "analyze_transaction": "POST /rest/analyze-transaction",
                     "query": "POST /rest/query",
+                    "test_blockscout": "POST /rest/test-blockscout",
+                    "get_analysis": "POST /rest/get-analysis",
                     "health": "GET /rest/health",
                     "info": "GET /rest/info"
                 }
             )
+        
+        @self.agent.on_rest_post("/rest/test-blockscout", TransactionRequest, TransactionResponse)
+        async def handle_test_blockscout(ctx: Context, req: TransactionRequest) -> TransactionResponse:
+            """Test endpoint to directly call BlockScout MCP with detailed logging."""
+            ctx.logger.info(f"TEST: Testing BlockScout MCP call for tx: {req.tx_hash}")
+            ctx.logger.info(f"TEST: Chain ID: {req.chain_id}")
+            
+            try:
+                # Direct call to BlockScout MCP
+                tx_data = await self.blockscout_client.get_transaction(
+                    req.tx_hash, 
+                    str(req.chain_id)
+                )
+                
+                ctx.logger.info(f"TEST: Successfully got transaction data")
+                ctx.logger.info(f"TEST: Transaction data keys: {list(tx_data.keys()) if isinstance(tx_data, dict) else 'Not a dict'}")
+                ctx.logger.info(f"TEST: Transaction data: {tx_data}")
+                
+                return TransactionResponse(
+                    success=True,
+                    tx_hash=req.tx_hash,
+                    data=tx_data,
+                    analysis="Test successful - transaction data retrieved"
+                )
+                
+            except Exception as e:
+                ctx.logger.error(f"TEST: Error calling BlockScout MCP: {e}")
+                ctx.logger.error(f"TEST: Exception type: {type(e).__name__}")
+                import traceback
+                ctx.logger.error(f"TEST: Traceback: {traceback.format_exc()}")
+                
+                return TransactionResponse(
+                    success=False,
+                    tx_hash=req.tx_hash,
+                    error=f"Test failed: {str(e)}"
+                )
         
         @self.agent.on_rest_post("/rest/get-analysis", TransactionRequest, AnalysisRetrievalResponse)
         async def handle_get_analysis(ctx: Context, req: TransactionRequest) -> AnalysisRetrievalResponse:
@@ -925,6 +975,7 @@ class BlockscoutAgent:
             ctx.logger.info("🌐 REST API endpoints available:")
             ctx.logger.info("  - POST /rest/analyze-transaction")
             ctx.logger.info("  - POST /rest/query")
+            ctx.logger.info("  - POST /rest/test-blockscout")
             ctx.logger.info("  - POST /rest/get-analysis")
             ctx.logger.info("  - GET /rest/health")
             ctx.logger.info("  - GET /rest/info")
