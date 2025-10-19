@@ -424,7 +424,7 @@ class BlockscoutAgent:
             port=8080,
             seed="blockscout agent seed phrase for transaction analysis",
             mailbox=f"{AGENTVERSE_API_KEY}" if AGENTVERSE_API_KEY else None,
-            endpoint=["http://127.0.0.1:8080/submit"]
+            endpoint=["https://blockscoutagent-739298578243.us-central1.run.app/submit"]
         )
         self.asi_client = ASIOneClient(ASI_ONE_API_KEY)
         self.blockscout_client = BlockScoutMCPClient(BLOCKSCOUT_MCP_URL)
@@ -919,6 +919,7 @@ class BlockscoutAgent:
             ctx.logger.info("🔧 FIXED: chain_id now sent as string, using 'transaction_hash' parameter")
             ctx.logger.info(f"🔧 MCP URL: {BLOCKSCOUT_MCP_URL}")
             ctx.logger.info(f"🔧 ASI:One API Key: {'SET' if ASI_ONE_API_KEY else 'NOT SET'}")
+            ctx.logger.info(f"🔧 A2A Endpoint: https://blockscoutagent-739298578243.us-central1.run.app/submit")
             if AGENTVERSE_API_KEY:
                 ctx.logger.info(f"✅ Registered on Agentverse")
             ctx.logger.info("🌐 REST API endpoints available:")
