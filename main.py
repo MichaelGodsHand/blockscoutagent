@@ -355,10 +355,10 @@ class BlockscoutAgent:
         self.name = name
         self.agent = Agent(
             name=name,
-            port=8001,
+            port=8080,
             seed="blockscout agent seed phrase for transaction analysis",
             mailbox=f"{AGENTVERSE_API_KEY}" if AGENTVERSE_API_KEY else None,
-            endpoint=["http://127.0.0.1:8001/submit"]
+            endpoint=["http://127.0.0.1:8080/submit"]
         )
         self.asi_client = ASIOneClient(ASI_ONE_API_KEY)
         self.blockscout_client = BlockScoutMCPClient(BLOCKSCOUT_MCP_URL)
