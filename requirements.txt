@@ -4,4 +4,4 @@ pydantic
 httpx
 asyncio-mqtt
 python-dotenv
-fastapi
+httpx_sse
